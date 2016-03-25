@@ -3,7 +3,9 @@ package slack
 import (
 	"errors"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/nlopes/slack"
 	"github.com/shogo82148/go-ape-any"
@@ -30,6 +32,8 @@ func (p *Slack) Send(to, message string) error {
 }
 
 func (p *Slack) Run() error {
+	startTime := time.Now().Unix()
+
 	p.RTM = p.API.NewRTM()
 	go p.RTM.ManageConnection()
 
@@ -41,6 +45,11 @@ func (p *Slack) Run() error {
 				p.myName = p.RTM.GetInfo().User.Name
 				p.myEncodedName = "<@" + p.RTM.GetInfo().User.ID + ">"
 			case *slack.MessageEvent:
+				if f, err := strconv.ParseFloat(ev.Timestamp, 64); err == nil {
+					if int64(f) < startTime {
+						continue
+					}
+				}
 				if ev.SubType == "" || ev.SubType == "bot_message" {
 					go p.bot.HandleEvent(p.newEvent(ev), nil)
 				}
@@ -62,7 +71,7 @@ func (p *Slack) newEvent(ev *slack.MessageEvent) *Event {
 		targetName := strings.TrimSpace(text[:colon])
 		if strings.EqualFold(targetName, p.myName) || strings.EqualFold(targetName, p.myEncodedName) {
 			e.isReplyToMe = true
-			text = text[colon:]
+			text = text[colon+1:]
 		}
 	}
 
