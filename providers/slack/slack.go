@@ -110,3 +110,9 @@ func (e *Event) Reply(message string) error {
 	rtm.SendMessage(rtm.NewOutgoingMessage(message, e.ev.Channel))
 	return nil
 }
+
+func (e *Event) Typing() error {
+	rtm := e.slack.RTM
+	rtm.SendMessage(rtm.NewTypingMessage(e.ev.Channel))
+	return nil
+}
