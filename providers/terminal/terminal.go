@@ -42,7 +42,7 @@ func (p *Terminal) Run() error {
 		if err != nil {
 			return err
 		}
-		p.bot.HandleEvent(p.newEvent(line), nil)
+		go p.bot.HandleEvent(p.newEvent(line), nil)
 	}
 	return nil
 }
