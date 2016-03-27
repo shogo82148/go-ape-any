@@ -17,13 +17,13 @@ func Handle(name string, h Handler) {
 }
 
 func HandleFunc(name string, f func(e Event, args []string)) {
-	defaultBot.HandleFunc(name)
+	defaultBot.HandleFunc(name, f)
 }
 
 func HandleDefault(h Handler) {
 	defaultBot.HandleDefault(h)
 }
 
-func (bot *Bot) HandleDefaultFunc(f func(e Event, args []string)) {
+func HandleDefaultFunc(f func(e Event, args []string)) {
 	defaultBot.HandleDefaultFunc(f)
 }
