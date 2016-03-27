@@ -4,6 +4,8 @@ import "regexp"
 
 type Provider interface {
 	Send(to, message string) error
+	Run() error
+	Stop() error
 }
 
 type Event interface {

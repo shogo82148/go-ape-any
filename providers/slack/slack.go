@@ -17,12 +17,14 @@ type Slack struct {
 	bot           ape.Handler
 	myName        string // my nickname
 	myEncodedName string // <@Uxxxxx> encoded name
+	done          chan struct{}
 }
 
 func New(bot ape.Handler, token string) *Slack {
 	return &Slack{
-		API: slack.New(token),
-		bot: bot,
+		API:  slack.New(token),
+		bot:  bot,
+		done: make(chan struct{}, 1),
 	}
 }
 
@@ -56,8 +58,15 @@ func (p *Slack) Run() error {
 			case *slack.InvalidAuthEvent:
 				return errors.New("invalid auth")
 			}
+		case <-p.done:
+			return nil
 		}
 	}
+}
+
+func (p *Slack) Stop() error {
+	p.done <- struct{}{}
+	return nil
 }
 
 var regexpSpace = regexp.MustCompile(`\s+`)

@@ -14,12 +14,14 @@ type Terminal struct {
 	bot    ape.Handler
 	myName string // my nickname
 	term   *terminal.Terminal
+	done   chan struct{}
 }
 
 func New(bot ape.Handler, myName string) *Terminal {
 	return &Terminal{
 		bot:    bot,
 		myName: myName,
+		done:   make(chan struct{}, 1),
 	}
 }
 
@@ -38,12 +40,31 @@ func (p *Terminal) Run() error {
 	term := terminal.NewTerminal(os.Stdin, "> ")
 	p.term = term
 	for {
-		line, err := term.ReadLine()
-		if err != nil {
+		chline := make(chan string)
+		cherr := make(chan error)
+
+		go func() {
+			line, err := term.ReadLine()
+			if err != nil {
+				cherr <- err
+			}
+			chline <- line
+		}()
+
+		select {
+		case line := <-chline:
+			go p.bot.HandleEvent(p.newEvent(line), nil)
+		case err := <-cherr:
 			return err
+		case <-p.done:
+			return nil
 		}
-		go p.bot.HandleEvent(p.newEvent(line), nil)
 	}
+	return nil
+}
+
+func (p *Terminal) Stop() error {
+	p.done <- struct{}{}
 	return nil
 }
 
