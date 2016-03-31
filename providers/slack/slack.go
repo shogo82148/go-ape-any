@@ -84,6 +84,11 @@ func (p *Slack) newEvent(ev *slack.MessageEvent) *Event {
 		}
 	}
 
+	if len(e.ev.Channel) >= 1 && (e.ev.Channel[0] == 'D' || e.ev.Channel[0] == 'd') {
+		// it is a direct message channel
+		e.isReplyToMe = true
+	}
+
 	// parse command
 	text = strings.TrimSpace(text)
 	args := regexpSpace.Split(text, -1)
