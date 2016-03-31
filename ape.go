@@ -50,17 +50,29 @@ type regexpEntry struct {
 }
 
 type Bot struct {
+	prehooks      []Handler
 	regexps       []regexpEntry
 	actions       map[string]Handler
 	defaultAction Handler
 }
 
+func (bot *Bot) PreHook(h Handler) {
+	bot.prehooks = append(bot.prehooks, h)
+}
+
 func (bot *Bot) HandleEvent(e Event, args []string) {
 	for _, r := range bot.regexps {
 		if match := r.regexp.FindStringSubmatch(e.Text()); match != nil {
+			for _, h := range bot.prehooks {
+				h.HandleEvent(e, match)
+			}
 			r.handler.HandleEvent(e, match)
 			return
 		}
+	}
+
+	for _, h := range bot.prehooks {
+		h.HandleEvent(e, e.Args())
 	}
 
 	if e.IsReplyToMe() {
