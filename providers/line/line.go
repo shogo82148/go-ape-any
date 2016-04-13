@@ -2,6 +2,9 @@ package line
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net"
@@ -129,6 +132,18 @@ func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Line) handleMessages(data []byte, signature string) {
+	// check signature
+	hash := hmac.New(sha256.New, []byte(p.channelSecret))
+	hash.Write(data)
+	signatureBytes, err := base64.StdEncoding.DecodeString(signature)
+	if err != nil {
+		log.Println("invalid signature:", signature)
+	}
+	if !hmac.Equal(signatureBytes, hash.Sum(nil)) {
+		log.Println("signature check failed")
+		return
+	}
+
 	log.Println(string(data))
 	body := &ReceivingBody{}
 	if err := json.Unmarshal(data, body); err != nil {
