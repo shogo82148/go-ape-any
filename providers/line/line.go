@@ -3,6 +3,7 @@ package line
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net"
 	"net/http"
 
@@ -21,7 +22,8 @@ type Line struct {
 type ContentType int
 
 const (
-	TypeText     ContentType = 1
+	TypeUnknown  ContentType = 0
+	TypeText                 = 1
 	TypeImage                = 2
 	TypeVideo                = 3
 	TypeAudio                = 4
@@ -29,6 +31,10 @@ const (
 	TypeSticker              = 8
 	TypeContact              = 10
 )
+
+type ReceivingBody struct {
+	Result []*ReceivingMessage `json:"result"`
+}
 
 type ReceivingMessage struct {
 	From        string            `json:"from"`
@@ -48,6 +54,14 @@ func (rc *ReceivingContent) ContentType() ContentType {
 	if rc.contentType != 0 {
 		return rc.contentType
 	}
+
+	var t struct {
+		ContentType ContentType `json:"contentType"`
+	}
+	if err := json.Unmarshal(rc.RawMessage, &t); err != nil {
+		return TypeUnknown
+	}
+	rc.contentType = t.ContentType
 
 	return rc.contentType
 }
@@ -79,6 +93,14 @@ func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	d := json.NewDecoder(r.Body)
+	body := &ReceivingBody{}
+	if err := d.Decode(body); err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	log.Println(body)
 }
 
 func (p *Line) Send(to, message string) error {
