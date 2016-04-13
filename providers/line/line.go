@@ -99,6 +99,7 @@ func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body := &ReceivingBody{}
 	if err := d.Decode(body); err != nil {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
 	log.Println(body)
