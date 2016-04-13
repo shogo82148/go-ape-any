@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/shogo82148/go-ape-any"
 )
@@ -138,6 +140,8 @@ func (p *Line) handleMessages(data []byte, signature string) {
 	}
 }
 
+var regexpSpace = regexp.MustCompile(`\s+`)
+
 func (p *Line) handleMessage(message *ReceivingMessage) {
 	switch message.Content.ContentType() {
 	case TypeText:
@@ -146,7 +150,20 @@ func (p *Line) handleMessage(message *ReceivingMessage) {
 			log.Println(err)
 			return
 		}
-		log.Println(text)
+		text.Text = strings.TrimSpace(text.Text)
+		command := ""
+		args := regexpSpace.Split(text.Text, -1)
+		if len(args) > 0 {
+			command = args[0]
+			args = args[1:]
+		}
+
+		p.bot.HandleEvent(&Event{
+			line:    p,
+			text:    text.Text,
+			command: command,
+			args:    args,
+		}, nil)
 	}
 }
 
