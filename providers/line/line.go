@@ -68,6 +68,25 @@ func (rc *ReceivingContent) ContentType() ContentType {
 	return rc.contentType
 }
 
+type ReceivingContentText struct {
+	ID              string            `json:"id,omitempty"`
+	From            string            `json:"from,omitempty"`
+	CreatedTime     int64             `json:"createdTime,omitempty"`
+	To              []string          `json:"to,omitempty"`
+	ToType          int               `json:"toType"`
+	ContentMetadata map[string]string `json:"contentMetadata,omitempty"`
+	Text            string            `json:"text"`
+	Location        map[string]string `json:"location,omitempty"`
+}
+
+func (rc *ReceivingContent) Text() (*ReceivingContentText, error) {
+	t := &ReceivingContentText{}
+	if err := json.Unmarshal(rc.RawMessage, t); err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
 type SendingMessage struct {
 	To        []string    `json:"to"`
 	ToChannel int64       `json:"toChannel"`
@@ -104,17 +123,31 @@ func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	data := buf.Bytes()
 	signature := r.Header.Get("X-Line-Channelsignature")
-	go p.handleMessage(data, signature)
+	go p.handleMessages(data, signature)
 }
 
-func (p *Line) handleMessage(data []byte, signature string) {
+func (p *Line) handleMessages(data []byte, signature string) {
 	log.Println(string(data))
 	body := &ReceivingBody{}
 	if err := json.Unmarshal(data, body); err != nil {
 		log.Println(err)
 		return
 	}
-	log.Println(body)
+	for _, message := range body.Result {
+		go p.handleMessage(message)
+	}
+}
+
+func (p *Line) handleMessage(message *ReceivingMessage) {
+	switch message.Content.ContentType() {
+	case TypeText:
+		text, err := message.Content.Text()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		log.Println(text)
+	}
 }
 
 func (p *Line) Send(to, message string) error {
