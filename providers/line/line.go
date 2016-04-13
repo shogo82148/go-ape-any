@@ -74,7 +74,7 @@ func New(bot ape.Handler, channelID, channelSecret, mid, address string) *Line {
 	}
 }
 
-func (p *Line) HandleHTTP(w http.ResponseWriter, r *http.Request) {
+func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -111,9 +111,9 @@ func (p *Line) Send(to, message string) error {
 	req.Header.Set("X-Line-ChannelSecret", p.channelSecret)
 	req.Header.Set("X-Line-Trusted-User-With-ACL", p.mid)
 
-	resp, err := http.Do(req)
+	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
-		return resp
+		return err
 	}
 	resp.Body.Close()
 	return nil
@@ -121,6 +121,9 @@ func (p *Line) Send(to, message string) error {
 
 func (p *Line) Run() error {
 	ln, err := net.Listen("tcp", p.address)
+	if err != nil {
+		return err
+	}
 	p.listener = ln
 	return http.Serve(ln, p)
 }
