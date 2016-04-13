@@ -160,6 +160,7 @@ func (p *Line) handleMessage(message *ReceivingMessage) {
 
 		p.bot.HandleEvent(&Event{
 			line:    p,
+			from:    text.From,
 			text:    text.Text,
 			command: command,
 			args:    args,
@@ -221,6 +222,7 @@ func (p *Line) Stop() error {
 type Event struct {
 	line *Line
 
+	from    string
 	text    string
 	command string
 	args    []string
@@ -228,12 +230,12 @@ type Event struct {
 
 func (e *Event) Command() string        { return e.command }
 func (e *Event) Args() []string         { return e.args }
-func (e *Event) Channel() string        { return "" }
+func (e *Event) Channel() string        { return e.from }
 func (e *Event) Text() string           { return e.text }
 func (e *Event) Nick() string           { return "" }
 func (e *Event) IsReplyToMe() bool      { return true }
 func (e *Event) Provider() ape.Provider { return e.line }
 
 func (e *Event) Reply(message string) error {
-	return nil
+	return e.line.Send(e.from, message)
 }
