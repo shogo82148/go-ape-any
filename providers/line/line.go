@@ -105,6 +105,13 @@ type SendingTextContent struct {
 	Text        string      `json:"text"`
 }
 
+type SendingImageContent struct {
+	ContentType        ContentType `json:"contentType"`
+	ToType             int         `json:"toType"`
+	OriginalContentURL string      `json:"originalContentUrl"`
+	PreviewImageURL    string      `json:"previewImageUrl"`
+}
+
 func New(bot ape.Handler, channelID, channelSecret, mid, address string) *Line {
 	return &Line{
 		bot:           bot,
@@ -194,9 +201,28 @@ func (p *Line) Send(to, message string) error {
 			Text:        message,
 		},
 	}
+	return p.SendEvent(msg)
+}
+
+func (p *Line) SendImage(to, orig, preview string) error {
+	msg := &SendingMessage{
+		To:        []string{to},
+		ToChannel: 1383378250,
+		EventType: "138311608800106203",
+		Content: &SendingImageContent{
+			ContentType:        TypeImage,
+			ToType:             1,
+			OriginalContentURL: orig,
+			PreviewImageURL:    preview,
+		},
+	}
+	return p.SendEvent(msg)
+}
+
+func (p *Line) SendEvent(v interface{}) error {
 	buf := &bytes.Buffer{}
 	e := json.NewEncoder(buf)
-	if err := e.Encode(msg); err != nil {
+	if err := e.Encode(v); err != nil {
 		return err
 	}
 
@@ -253,4 +279,8 @@ func (e *Event) Provider() ape.Provider { return e.line }
 
 func (e *Event) Reply(message string) error {
 	return e.line.Send(e.from, message)
+}
+
+func (e *Event) ReplyImage(orig, preview string) error {
+	return e.line.SendImage(e.from, orig, preview)
 }
