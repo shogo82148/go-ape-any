@@ -85,6 +85,7 @@ func New(bot ape.Handler, channelID, channelSecret, mid, address string) *Line {
 		channelID:     channelID,
 		channelSecret: channelSecret,
 		mid:           mid,
+		address:       address,
 	}
 }
 
