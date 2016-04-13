@@ -38,10 +38,12 @@ type ReceivingBody struct {
 
 type ReceivingMessage struct {
 	From        string            `json:"from"`
-	FromChannel string            `json:"fromChannel"`
+	FromChannel int64             `json:"fromChannel"`
 	To          []string          `json:"to"`
+	ToChannel   int64             `json:"toChannel"`
 	EventType   string            `json:"eventType"`
 	ID          string            `json:"id"`
+	CreatedTime int64             `json:"createdTime"`
 	Content     *ReceivingContent `json:"content"`
 }
 
