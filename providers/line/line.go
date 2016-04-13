@@ -95,10 +95,20 @@ func (p *Line) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	d := json.NewDecoder(r.Body)
-	body := &ReceivingBody{}
-	if err := d.Decode(body); err != nil {
+	buf := &bytes.Buffer{}
+	if _, err := buf.ReadFrom(r.Body); err != nil {
+		log.Println(err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+	data := buf.Bytes()
+	signature := r.Header.Get("X-Line-Channelsignature")
+	go p.handleMessage(data, signature)
+}
+
+func (p *Line) handleMessage(data []byte, signature string) {
+	log.Println(string(data))
+	body := &ReceivingBody{}
+	if err := json.Unmarshal(data, body); err != nil {
 		log.Println(err)
 		return
 	}
